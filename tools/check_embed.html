@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embed Check</title>
+<style>
+  :root { color-scheme: light dark; --ok: #1f9d62; --bad: #d9443b; }
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 16px; background: Canvas; color: CanvasText; }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+  td, th { border-bottom: 1px solid #8884; padding: 4px 8px; text-align: left; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); font-weight: 700; }
+  #probe-wrap { position: fixed; right: 8px; bottom: 8px; width: 200px; height: 200px; opacity: .15; }
+</style>
+</head>
+<body>
+<!--
+  Plays every video in a song list for real inside the YouTube IFrame player
+  (oEmbed passing does not guarantee playback: region blocks, age gates, etc.).
+
+  Serve over http from a folder that also contains the list, then open:
+    check_embed.html?src=<path to items.json | found.json | songs.js>
+  Results: the table below, and window.embedResults = [{ youtubeId, label, status }]
+  once window.embedDone === true. status: "ok" | "error <code>" | "timeout".
+-->
+<h1>Embed playback check</h1>
+<p id="status">Loading…</p>
+<table><thead><tr><th>#</th><th>Item</th><th>Video</th><th>Result</th></tr></thead><tbody id="rows"></tbody></table>
+<div id="probe-wrap"><div id="probe"></div></div>
+<script>
+  window.embedResults = [];
+  window.embedDone = false;
+  const statusEl = document.getElementById('status');
+  const rows = document.getElementById('rows');
+
+  async function loadItems() {
+    const src = new URLSearchParams(location.search).get('src');
+    if (!src) throw new Error('Add ?src=<path to items.json or songs.js>');
+    const text = await (await fetch(src)).text();
+    if (/\.m?js$/.test(src.split('?')[0])) {
+      const at = text.indexOf('const SONGS');
+      return new Function(text.slice(at).replace('const SONGS =', 'return'))();
+    }
+    return JSON.parse(text);
+  }
+
+  function addRow(i, item, status) {
+    const tr = document.createElement('tr');
+    const label = item.id || item.en || (item.work && item.work.en) || item.track || '';
+    [i + 1, label, item.youtubeId, status].forEach((v, j) => {
+      const td = document.createElement('td');
+      td.textContent = v;
+      if (j === 3) td.className = status === 'ok' ? 'ok' : 'bad';
+      tr.appendChild(td);
+    });
+    rows.appendChild(tr);
+    window.embedResults.push({ youtubeId: item.youtubeId, label, status });
+  }
+
+  window.onYouTubeIframeAPIReady = async () => {
+    let items;
+    try { items = (await loadItems()).filter((x) => x.youtubeId); }
+    catch (e) { statusEl.textContent = String(e.message || e); return; }
+
+    let i = 0, timer = null, player;
+    const next = () => {
+      clearTimeout(timer);
+      if (i >= items.length) {
+        player.stopVideo();
+        const bad = window.embedResults.filter((r) => r.status !== 'ok').length;
+        statusEl.textContent = `Done: ${items.length - bad} ok, ${bad} failed.`;
+        window.embedDone = true;
+        return;
+      }
+      statusEl.textContent = `Checking ${i + 1} / ${items.length}…`;
+      player.mute();
+      player.loadVideoById(items[i].youtubeId);
+      timer = setTimeout(() => finish('timeout'), 10000);
+    };
+    const finish = (status) => { addRow(i, items[i], status); i++; next(); };
+
+    player = new YT.Player('probe', {
+      width: 200, height: 200, playerVars: { mute: 1, autoplay: 1, controls: 0 },
+      events: {
+        onReady: next,
+        onStateChange: (e) => { if (e.data === YT.PlayerState.PLAYING && i < items.length) finish('ok'); },
+        onError: (e) => finish('error ' + e.data),
+      },
+    });
+  };
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>

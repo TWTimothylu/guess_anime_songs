@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>動畫歌曲猜猜看</title>
+  <meta name="description" content="聽一段日本動畫主題曲，猜出是哪一部動畫！音樂來源：YouTube。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="spotlight" aria-hidden="true"></div>
+
+  <main class="app">
+    <!-- ===== 開始畫面 ===== -->
+    <section id="screen-start" class="screen active">
+      <p class="eyebrow">ANIME SONG QUIZ</p>
+      <h1 class="title">動畫歌曲<br><span>猜猜看</span></h1>
+      <p class="subtitle">聽一段動畫 OP／ED，猜出是哪一部動畫。</p>
+
+      <div class="challenge" id="challenge-banner" hidden>
+        <p class="eyebrow">CHALLENGE</p>
+        <p class="challenge-text" id="challenge-text"></p>
+        <button id="btn-exit-challenge" class="btn-link" type="button">改玩一般模式</button>
+      </div>
+
+      <div class="settings" id="settings">
+        <fieldset>
+          <legend>難度</legend>
+          <div class="seg" data-setting="difficulty">
+            <button type="button" data-value="easy">簡單<small>15 秒</small></button>
+            <button type="button" data-value="normal" class="on">普通<small>10 秒</small></button>
+            <button type="button" data-value="hard">困難<small>5 秒</small></button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>題數</legend>
+          <div class="seg" data-setting="rounds">
+            <button type="button" data-value="5">5 題</button>
+            <button type="button" data-value="10" class="on">10 題</button>
+            <button type="button" data-value="20">20 題</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>題庫</legend>
+          <div class="seg" data-setting="pool">
+            <button type="button" data-value="all" class="on">全部</button>
+            <button type="button" data-value="classic">經典<small>～2009</small></button>
+            <button type="button" data-value="recent">近年<small>2010～</small></button>
+          </div>
+        </fieldset>
+      </div>
+
+      <button id="btn-start" class="btn-primary" type="button" disabled>載入中…</button>
+      <p class="best" id="best-score"></p>
+    </section>
+
+    <!-- ===== 遊戲畫面 ===== -->
+    <section id="screen-game" class="screen">
+      <header class="hud">
+        <div><span class="label">題目</span><strong id="hud-round">1 / 10</strong></div>
+        <div><span class="label">連擊</span><strong id="hud-streak">0</strong></div>
+        <div><span class="label">分數</span><strong id="hud-score">0</strong></div>
+      </header>
+
+      <div class="stage">
+        <div class="player-wrap">
+          <div id="yt-player"></div>
+          <div class="cover" id="cover">
+            <div class="vinyl" id="vinyl"><div class="label-disc" id="label-disc">?</div></div>
+            <p class="cover-status" id="cover-status">準備中…</p>
+            <div class="snippet-bar"><div id="snippet-fill"></div></div>
+          </div>
+        </div>
+        <div class="timer"><div id="timer-fill"></div></div>
+      </div>
+
+      <div class="question">
+        <h2>這首歌出自哪一部動畫？</h2>
+        <button id="btn-replay" class="btn-ghost" type="button" disabled>🔁 再聽一次</button>
+      </div>
+
+      <div class="options" id="options"></div>
+
+      <div class="reveal" id="reveal" hidden>
+        <p class="verdict" id="verdict"></p>
+        <h3 id="reveal-title"></h3>
+        <p id="reveal-meta"></p>
+        <p><a id="reveal-yt" class="yt-link" target="_blank" rel="noopener">在 YouTube 觀看 ↗</a></p>
+        <button id="btn-next" class="btn-primary" type="button">下一題 →</button>
+      </div>
+    </section>
+
+    <!-- ===== 結算畫面 ===== -->
+    <section id="screen-end" class="screen">
+      <p class="eyebrow">おつかれさま</p>
+      <h1 class="title small">本日結算</h1>
+      <div class="final">
+        <div><span class="label">總分</span><strong id="final-score">0</strong></div>
+        <div><span class="label">答對</span><strong id="final-correct">0 / 0</strong></div>
+        <div><span class="label">最長連擊</span><strong id="final-streak">0</strong></div>
+      </div>
+      <p class="rank" id="final-rank"></p>
+      <p class="challenge-result" id="challenge-result" hidden></p>
+
+      <div class="share-box">
+        <label class="name-field">
+          <span>你的名字（選填，會顯示在分享圖和邀請中）</span>
+          <input id="player-name" type="text" maxlength="16" placeholder="例如：追番魔人小明" autocomplete="nickname">
+        </label>
+        <div class="share-actions">
+          <button id="btn-share-img" class="btn-secondary" type="button">📸 分享成績圖到 IG</button>
+          <button id="btn-invite" class="btn-secondary" type="button">🎯 邀請朋友挑戰</button>
+        </div>
+        <p class="hint" id="invite-msg" aria-live="polite"></p>
+        <input class="invite-link" id="invite-link" type="text" readonly hidden>
+      </div>
+
+      <ol class="credits" id="credits"></ol>
+      <button id="btn-again" class="btn-primary" type="button">再玩一次</button>
+    </section>
+  </main>
+
+  <!-- ===== 分享成績圖 ===== -->
+  <div class="modal" id="share-modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="share-title">
+      <button class="modal-close" id="btn-close-share" type="button" aria-label="關閉">✕</button>
+      <h3 id="share-title">分享成績</h3>
+      <div class="share-preview"><img id="share-img" alt="成績分享圖"></div>
+      <div class="share-actions">
+        <button id="btn-share-ig" class="btn-primary" type="button">分享到 IG</button>
+        <button id="btn-download" class="btn-secondary" type="button">⬇ 下載圖片</button>
+      </div>
+      <p class="hint" id="share-hint">手機可直接分享到 IG 限時動態；電腦請先下載圖片再上傳到 IG。</p>
+    </div>
+  </div>
+
+  <footer class="foot">音樂與影片來源：YouTube。所有歌曲版權屬原權利人所有，本遊戲僅供娛樂。</footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="songs.js"></script>
+  <script src="share.js"></script>
+  <script src="game.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
